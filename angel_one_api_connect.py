@@ -16,10 +16,6 @@ Original file is located at
 importing lib
 """
 
-!pip install smartapi-python
-!pip install websocket-client 
-!pip install pyotp
-
 from smartapi import SmartConnect
 import requests
 import datetime
@@ -98,13 +94,15 @@ class DataHandling(login):
     }
 
     #the obj in the line below has to be accessed which aint happening
-    self.history = self.obj.getCandleData(historicParam)['data']
-    self.history = pd.DataFrame(self.history)
+    history = self.obj.getCandleData(historicParam)['data']
+    history = pd.DataFrame(history)
 
-    self.history = self.history.rename(
+    history = history.rename(
         columns = {0:"Datetime",1:"open",2:"high",3:"low",4:"close",5:"volume",}
     )
-    self.history['Datetime']=pd.to_datetime(self.history['Datetime'])
+    history['Datetime']=pd.to_datetime(history['Datetime'])
+    history = history.reset_index()
+    self.history = history
     print(self.history)
     #except Exception as e:
       #print("Historic Api failed: {}".format(e))
