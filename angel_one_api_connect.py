@@ -16,70 +16,63 @@ Original file is located at
 importing lib
 """
 
-!pip install smartapi-python
-!pip install websocket-client 
-!pip install pyotp
-
 from smartapi import SmartConnect
 import requests
 import datetime
-from datetime import date
-import os
-import json
-import csv
+
 import pandas as pd
-import numpy as np
-import time
-import math
+
 import pyotp
 
 """Login"""
 
+
 class login:
-  def __init__(self):
-      self.__client_id = "A50876433"
-      self.__pwd = "1406"
-      self.__api = "BubCvEuz"
-      self.__token = "Z2D573OIJ2PDHCKD66NMIRVGWY"
-      self.obj = None
+    def __init__(self):
+        self.__client_id = "A50876433"
+        self.__pwd = "1406"
+        self.__api = "BubCvEuz"
+        self.__token = "Z2D573OIJ2PDHCKD66NMIRVGWY"
+        self.obj = None
 
-  def Login(self):
-    '''logs into angel one'''
-    try:
+    def Login(self):
+        '''logs into angel one'''
+        try:
 
-      self.obj=SmartConnect(api_key=self.__api)
-      data = self.obj.generateSession(self.__client_id,self.__pwd,pyotp.TOTP(self.__token).now())
-      self.refreshToken= data['data']['refreshToken']
-      self.feedToken=self.obj.getfeedToken()
-      self.userProfile= self.obj.getProfile(self.refreshToken)
-      print(self.userProfile)
-    except Exception as e:
-      print("Login failed: {}".format(e))
+            self.obj = SmartConnect(api_key=self.__api)
+            data = self.obj.generateSession(self.__client_id, self.__pwd, pyotp.TOTP(self.__token).now())
+            self.refreshToken = data['data']['refreshToken']
+            self.feedToken = self.obj.getfeedToken()
+            self.userProfile = self.obj.getProfile(self.refreshToken)
+            print(self.userProfile)
+        except Exception as e:
+            print("Login failed: {}".format(e))
+
 
 class DataHandling(login):
-  def __init__(self):
-    super().__init__()
+    def __init__(self):
+        super().__init__()
 
-  def initializeTokenMap(self):
-    '''gets the token map for all tradeables'''
+    def initializeTokenMap(self):
+        '''gets the token map for all tradeables'''
 
-    url = 'https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json'
-    d = requests.get(url).json()
-    token_df = pd.DataFrame.from_dict(d)
-    token_df['expiry'] = pd.to_datetime(token_df['expiry'])
-    token_df = token_df.astype({'strike':float})
-    self.token_map = token_df
-    print(token_df)
+        url = 'https://margincalculator.angelbroking.com/OpenAPI_File/files/OpenAPIScripMaster.json'
+        d = requests.get(url).json()
+        token_df = pd.DataFrame.from_dict(d)
+        token_df['expiry'] = pd.to_datetime(token_df['expiry'])
+        token_df = token_df.astype({'strike': float})
+        self.token_map = token_df
+        print(token_df)
 
-  def getTokenInfo(self,symbol,exch_seg = 'NSE'):
-    '''eq_df contains all the details about tradeable eq'''
-    df = self.token_map
-    if exch_seg == "NSE":
-      eq_df = df[(df['exch_seg'] == "NSE") & (df['symbol'].str.contains('EQ')) ]
-      return eq_df[eq_df['name'] == symbol]
+    def getTokenInfo(self, symbol, exch_seg='NSE'):
+        '''eq_df contains all the details about tradeable eq'''
+        df = self.token_map
+        if exch_seg == "NSE":
+            eq_df = df[(df['exch_seg'] == "NSE") & (df['symbol'].str.contains('EQ'))]
+            return eq_df[eq_df['name'] == symbol]
 
-  def OHLCHistory(self,symbol,token,interval,fdate,todate,exchange="NSE"):
-    '''
+    def OHLCHistory(self, symbol, token, interval, fdate, todate, exchange="NSE"):
+        '''
     gets the candle data for one symbol by doing a single api call
   
     task: 
@@ -87,27 +80,34 @@ class DataHandling(login):
     api(ie 30 days for 1 min data)
     -need to get data for n tickers
     '''
-    #try:
-    historicParam={
-    "exchange": exchange,
-    "tradingsymbol": symbol,
-    "symboltoken": token,
-    "interval": interval,
-    "fromdate": fdate, 
-    "todate": todate
-    }
+        # try:
+        historicParam = {
+            "exchange": exchange,
+            "tradingsymbol": symbol,
+            "symboltoken": token,
+            "interval": interval,
+            "fromdate": fdate,
+            "todate": todate
+        }
 
-    #the obj in the line below has to be accessed which aint happening
-    self.history = self.obj.getCandleData(historicParam)['data']
-    self.history = pd.DataFrame(self.history)
+        # the obj in the line below has to be accessed which aint happening
+        history = self.obj.getCandleData(historicParam)['data']
+        history = pd.DataFrame(history)
+        history['ticker'] = symbol
 
-    self.history = self.history.rename(
-        columns = {0:"Datetime",1:"open",2:"high",3:"low",4:"close",5:"volume",}
-    )
-    self.history['Datetime']=pd.to_datetime(self.history['Datetime'])
-    print(self.history)
-    #except Exception as e:
-      #print("Historic Api failed: {}".format(e))
+        history = history.reset_index()
+        history = history.rename(
+            columns={0: "Datetime", 1: "open", 2: "high", 3: "low", 4: "close", 5: "volume"}
+        )
+
+        history['Datetime'] = pd.to_datetime(history['Datetime'])
+        # history['Datetime'].dt.tz_convert(none)
+
+        self.history = history
+        return self.history
+        # except Exception as e:
+        # print("Historic Api failed: {}".format(e))
+
 
 dh = DataHandling()
 
@@ -115,20 +115,59 @@ dh.Login()
 
 dh.initializeTokenMap()
 
-stocks = ['SBIN','SRF','KTKBANK']
-Dailydata={}
-
-for ticker in stocks:
-   tokendetails = dh.getTokenInfo(ticker).iloc[0]
-   symbol = tokendetails['symbol']
-   token = tokendetails['token']
-   Dailydata[ticker] = dh.OHLCHistory(str(symbol),str(token),"ONE_MINUTE","2021-02-28 00:00","2021-3-31 00:00")
+# , 'SRF', 'KTKBANK'
+stocks = ['SBIN']
+Dailydata = {}
 
 
+# for ticker in stocks:
+#     tokendetails = dh.getTokenInfo(ticker).iloc[0]
+#     symbol = tokendetails['symbol']
+#     token = tokendetails['token']
+#     Dailydata[ticker] = dh.OHLCHistory(str(symbol),str(token),"ONE_MINUTE","2021-04-06 00:00","2021-04-06 23:59")
+
+def Run(stocks, start_date, end_date):
+    data_df = pd.DataFrame()
+    start_date_final = start_date
+    end_date_final = end_date
+
+    for ticker in stocks:
+        tokendetails = dh.getTokenInfo(ticker).iloc[0]
+        symbol = tokendetails['symbol']
+        token = tokendetails['token']
+
+        exit = 0
+
+        start_time = datetime.datetime.strptime(start_date_final, '%Y-%m-%d %H:%M')
+        start_time += datetime.timedelta(days=-1)
+        end_time = start_time + datetime.timedelta(days=1)
+        end_date = datetime.datetime.strptime(end_date_final, '%Y-%m-%d %H:%M')
+
+        while exit == 0:
+
+            try:
+
+                if isinstance(start_time, str):
+                    start_time = datetime.datetime.strptime(start_time, '%Y-%m-%d %H:%M')
+                if isinstance(end_time, str):
+                    end_time = datetime.datetime.strptime(end_time, '%Y-%m-%d %H:%M')
+
+                start_time += datetime.timedelta(days=1)
+                end_time += datetime.timedelta(days=1)
+
+                start_time = start_time.strftime('%Y-%m-%d %H:%M')
+                end_time = end_time.strftime('%Y-%m-%d %H:%M')
+                temp_df = pd.DataFrame()
+                temp_df = dh.OHLCHistory(str(symbol), str(token), "ONE_MINUTE", start_time, end_time)
+                print("fetched")
+                data_df = pd.concat([data_df, temp_df], axis=0)
+
+                end_time = datetime.datetime.strptime(end_time, '%Y-%m-%d %H:%M')
+                if end_time > end_date:
+                    exit = 1
 
 
+            except KeyError:
+                continue
 
-
-
-
-
+    return data_df
