@@ -15,7 +15,7 @@ Original file is located at
 
 importing lib
 """
-from numpy.distutils.fcompiler import none
+
 from smartapi import SmartConnect
 import requests
 import datetime
@@ -93,10 +93,11 @@ class DataHandling(login):
         # the obj in the line below has to be accessed which aint happening
         history = self.obj.getCandleData(historicParam)['data']
         history = pd.DataFrame(history)
+        history['ticker'] = symbol
 
         history = history.reset_index()
         history = history.rename(
-            columns={0: "Datetime", 1: "open", 2: "high", 3: "low", 4: "close", 5: "volume", }
+            columns={0: "Datetime", 1: "open", 2: "high", 3: "low", 4: "close", 5: "volume"}
         )
 
         history['Datetime'] = pd.to_datetime(history['Datetime'])
@@ -118,40 +119,55 @@ dh.initializeTokenMap()
 stocks = ['SBIN']
 Dailydata = {}
 
+
 # for ticker in stocks:
 #     tokendetails = dh.getTokenInfo(ticker).iloc[0]
 #     symbol = tokendetails['symbol']
 #     token = tokendetails['token']
 #     Dailydata[ticker] = dh.OHLCHistory(str(symbol),str(token),"ONE_MINUTE","2021-04-06 00:00","2021-04-06 23:59")
 
-def Run(start_date, end_date):
-    data_df = pd.DataFrame
-    tokendetails = dh.getTokenInfo('SBIN').iloc[0]
-    symbol = tokendetails['symbol']
-    token = tokendetails['token']
-    exit = 0
-    start_time = datetime.datetime.strptime(start_date, '%Y-%m-%d %H:%M')
-    end_time = start_time + datetime.timedelta(days=1)
-    print("sucesss")
-    end_date = datetime.datetime.strptime(end_date, '%Y-%m-%d %H:%M')
+def Run(stocks, start_date, end_date):
+    data_df = pd.DataFrame()
+    start_date_final = start_date
+    end_date_final = end_date
 
-    while exit == 0:
-        try:
-            temp_df = dh.OHLCHistory(str(symbol),str(token), "ONE_MINUTE", start_time, end_time)
+    for ticker in stocks:
+        tokendetails = dh.getTokenInfo(ticker).iloc[0]
+        symbol = tokendetails['symbol']
+        token = tokendetails['token']
 
-            start_time += datetime.timedelta(days = 1)
-            end_time += datetime.timedelta(days = 1)
-            data_df = pd.concat([data_df, temp_df], axis=0)
-            print(1)
-            if end_time > end_date:
-                exit = 1
+        exit = 0
 
-        except KeyError:
-            continue
+        start_time = datetime.datetime.strptime(start_date_final, '%Y-%m-%d %H:%M')
+        start_time += datetime.timedelta(days=-1)
+        end_time = start_time + datetime.timedelta(days=1)
+        end_date = datetime.datetime.strptime(end_date_final, '%Y-%m-%d %H:%M')
+
+        while exit == 0:
+
+            try:
+
+                if isinstance(start_time, str):
+                    start_time = datetime.datetime.strptime(start_time, '%Y-%m-%d %H:%M')
+                if isinstance(end_time, str):
+                    end_time = datetime.datetime.strptime(end_time, '%Y-%m-%d %H:%M')
+
+                start_time += datetime.timedelta(days=1)
+                end_time += datetime.timedelta(days=1)
+
+                start_time = start_time.strftime('%Y-%m-%d %H:%M')
+                end_time = end_time.strftime('%Y-%m-%d %H:%M')
+                temp_df = pd.DataFrame()
+                temp_df = dh.OHLCHistory(str(symbol), str(token), "ONE_MINUTE", start_time, end_time)
+                print("fetched")
+                data_df = pd.concat([data_df, temp_df], axis=0)
+
+                end_time = datetime.datetime.strptime(end_time, '%Y-%m-%d %H:%M')
+                if end_time > end_date:
+                    exit = 1
+
+
+            except KeyError:
+                continue
 
     return data_df
-
-
-
-
-
