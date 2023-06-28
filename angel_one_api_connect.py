@@ -108,66 +108,55 @@ class DataHandling(login):
         # except Exception as e:
         # print("Historic Api failed: {}".format(e))
 
+    def dataDownloader(stocks, start_date, end_date):
+        dh = DataHandling
+        data_df = pd.DataFrame()
+        start_date_final = start_date
+        end_date_final = end_date
 
-dh = DataHandling()
+        for ticker in stocks:
+            tokendetails = dh.getTokenInfo(ticker).iloc[0]
+            symbol = tokendetails['symbol']
+            token = tokendetails['token']
 
-dh.Login()
+            exit = 0
 
-dh.initializeTokenMap()
+            start_time = datetime.datetime.strptime(start_date_final, '%Y-%m-%d %H:%M')
+            start_time += datetime.timedelta(days=-1)
+            end_time = start_time + datetime.timedelta(days=1)
+            end_date = datetime.datetime.strptime(end_date_final, '%Y-%m-%d %H:%M')
 
-# , 'SRF', 'KTKBANK'
-stocks = ['SBIN']
-Dailydata = {}
+            while exit == 0:
 
+                try:
 
-# for ticker in stocks:
-#     tokendetails = dh.getTokenInfo(ticker).iloc[0]
-#     symbol = tokendetails['symbol']
-#     token = tokendetails['token']
-#     Dailydata[ticker] = dh.OHLCHistory(str(symbol),str(token),"ONE_MINUTE","2021-04-06 00:00","2021-04-06 23:59")
+                    if isinstance(start_time, str):
+                        start_time = datetime.datetime.strptime(start_time, '%Y-%m-%d %H:%M')
+                    if isinstance(end_time, str):
+                        end_time = datetime.datetime.strptime(end_time, '%Y-%m-%d %H:%M')
 
-def Run(stocks, start_date, end_date):
-    data_df = pd.DataFrame()
-    start_date_final = start_date
-    end_date_final = end_date
+                    start_time += datetime.timedelta(days=1)
+                    end_time += datetime.timedelta(days=1)
 
-    for ticker in stocks:
-        tokendetails = dh.getTokenInfo(ticker).iloc[0]
-        symbol = tokendetails['symbol']
-        token = tokendetails['token']
+                    start_time = start_time.strftime('%Y-%m-%d %H:%M')
+                    end_time = end_time.strftime('%Y-%m-%d %H:%M')
+                    temp_df = pd.DataFrame()
+                    temp_df = dh.OHLCHistory(str(symbol), str(token), "ONE_MINUTE", start_time, end_time)
+                    print("fetched")
+                    data_df = pd.concat([data_df, temp_df], axis=0)
 
-        exit = 0
-
-        start_time = datetime.datetime.strptime(start_date_final, '%Y-%m-%d %H:%M')
-        start_time += datetime.timedelta(days=-1)
-        end_time = start_time + datetime.timedelta(days=1)
-        end_date = datetime.datetime.strptime(end_date_final, '%Y-%m-%d %H:%M')
-
-        while exit == 0:
-
-            try:
-
-                if isinstance(start_time, str):
-                    start_time = datetime.datetime.strptime(start_time, '%Y-%m-%d %H:%M')
-                if isinstance(end_time, str):
                     end_time = datetime.datetime.strptime(end_time, '%Y-%m-%d %H:%M')
-
-                start_time += datetime.timedelta(days=1)
-                end_time += datetime.timedelta(days=1)
-
-                start_time = start_time.strftime('%Y-%m-%d %H:%M')
-                end_time = end_time.strftime('%Y-%m-%d %H:%M')
-                temp_df = pd.DataFrame()
-                temp_df = dh.OHLCHistory(str(symbol), str(token), "ONE_MINUTE", start_time, end_time)
-                print("fetched")
-                data_df = pd.concat([data_df, temp_df], axis=0)
-
-                end_time = datetime.datetime.strptime(end_time, '%Y-%m-%d %H:%M')
-                if end_time > end_date:
-                    exit = 1
+                    if end_time > end_date:
+                        exit = 1
 
 
-            except KeyError:
-                continue
+                except KeyError:
+                    continue
 
-    return data_df
+        return data_df
+
+
+
+
+
+
