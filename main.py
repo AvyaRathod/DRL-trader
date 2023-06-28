@@ -7,7 +7,12 @@ def main():
     dh.initializeTokenMap()
 
     stocks = ['SBIN', 'SRF', 'KTKBANK']
-    print(dh.dataDownloader(stocks, "2021-12-06 00:00", "2021-12-15 00:00"))
+    data_df = dh.dataDownloader(stocks, "2021-12-06 00:00", "2021-12-15 00:00")
+    print(data_df)
+
+    print(dh.dateTimeCounter(data_df))
+
+
 
 
 

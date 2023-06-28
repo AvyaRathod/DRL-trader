@@ -157,6 +157,16 @@ class DataHandling(login):
 
         return data_df
 
+    def dateTimeCounter(self, data_df):
+        temp_df = pd.DataFrame()
+        temp_df = data_df
+        data_df = temp_df.sort_values(by = ["Datetime", "ticker"], ascending = True)
+
+
+
+        return data_df
+
+
 
 
 
