@@ -31,7 +31,7 @@ class login:
     def __init__(self):
         self.__client_id = "A50876433"
         self.__pwd = "1406"
-        self.__api = "BubCvEuz"
+        self.__api = "mSYvrNuR"
         self.__token = "Z2D573OIJ2PDHCKD66NMIRVGWY"
         self.obj = None
 
@@ -108,14 +108,16 @@ class DataHandling(login):
         # except Exception as e:
         # print("Historic Api failed: {}".format(e))
 
-    def dataDownloader(stocks, start_date, end_date):
+    def dataDownloader(self, stocks, start_date, end_date):
         dh = DataHandling
         data_df = pd.DataFrame()
         start_date_final = start_date
         end_date_final = end_date
 
+        stocks = list(stocks)
+
         for ticker in stocks:
-            tokendetails = dh.getTokenInfo(ticker).iloc[0]
+            tokendetails = dh.getTokenInfo(self, ticker).iloc[0]
             symbol = tokendetails['symbol']
             token = tokendetails['token']
 
@@ -141,7 +143,7 @@ class DataHandling(login):
                     start_time = start_time.strftime('%Y-%m-%d %H:%M')
                     end_time = end_time.strftime('%Y-%m-%d %H:%M')
                     temp_df = pd.DataFrame()
-                    temp_df = dh.OHLCHistory(str(symbol), str(token), "ONE_MINUTE", start_time, end_time)
+                    temp_df = dh.OHLCHistory(self, str(symbol), str(token), "ONE_MINUTE", start_time, end_time)
                     print("fetched")
                     data_df = pd.concat([data_df, temp_df], axis=0)
 
