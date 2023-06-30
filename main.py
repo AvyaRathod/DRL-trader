@@ -2,6 +2,7 @@ import angel_one_api_connect as api
 
 
 def main():
+    print(1)
     dh = api.DataHandling()
     dh.Login()
     dh.initializeTokenMap()

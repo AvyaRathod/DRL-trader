@@ -26,7 +26,6 @@ import pyotp
 
 """Login"""
 
-
 class login:
     def __init__(self):
         self.__client_id = "A50876433"
@@ -162,7 +161,12 @@ class DataHandling(login):
         temp_df = data_df
         data_df = temp_df.sort_values(by = ["Datetime", "ticker"], ascending = True)
 
+        # datetimelist = list(data_df['Datetime'])
+        dateTimeDictionary = dict(zip(data_df['Datetime'], range(len(data_df['Datetime']))))
 
+        for row in data_df.index():
+            key = row.iloc[1]
+            data_df['dateTimeCounter'] = dateTimeDictionary[key]
 
         return data_df
 
